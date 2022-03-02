@@ -69,12 +69,13 @@ def query_by_title(input):
     return json.dumps(jsonresult, indent=4)
 
 def query_by_ingredients(input):
-    jsonresult = []
+    results = []
     tfidfvectorizer = TfidfVectorizer(ngram_range=(1,2))
     ingre_vec = tfidfvectorizer.fit_transform(cleaned_ingredients)
     query = tfidfvectorizer.transform([clean(input)])
     result = cosine_similarity(ingre_vec, query).reshape((-1,))
-    for i, index in enumerate(result.argsort()[-10:][::-1]):
-        jsonresult.append({'rank': i + 1, 'menu': dataset['Title'][index], 'ingredients': dataset['Cleaned_Ingredients'][index]})
-        print(str(i + 1), dataset['Title'][index], "--", result[index])
-    return json.dumps(jsonresult, indent=4)
+    for i, index in enumerate(result.argsort()[:][::-1]):
+        if result[index] > 0.0:
+            results.append(index)
+        # print(str(i + 1), dataset['Title'][index], "--", result[index])
+    return results
