@@ -1,8 +1,8 @@
+import json
 import pickle
 import re
 import string
 from pathlib import Path
-
 import pandas as pd
 from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
@@ -21,7 +21,7 @@ def clean(text):
     stemmed_text = ' '.join([ps.stem(w) for w in sw_removed_text])
     return stemmed_text
 dataset = pd.read_csv('ingredient_dataset.csv')
-# dataset = dataset.drop(['Unnamed: 0', 'Ingredients'],axis=1)
+dataset = dataset.drop(['Unnamed: 0', 'Ingredients'],axis=1)
 dataset = dataset.dropna()
 dataset = dataset.reset_index(drop=True)
 cleaned_title = []
@@ -58,17 +58,23 @@ else:
 # cleaned_description = cleaned_description.apply(lambda s: ' '.join([ps.stem(w) for w in s]))
 
 def query_by_title(input):
+    jsonresult = []
     tfidfvectorizer = TfidfVectorizer(ngram_range=(1,2))
     title_vec = tfidfvectorizer.fit_transform(cleaned_title)
     query = tfidfvectorizer.transform([clean(input)])
     result = cosine_similarity(title_vec, query).reshape((-1,))
     for i, index in enumerate(result.argsort()[-10:][::-1]):
-        print(str(i + 1), dataset['Title'][index], "--", dataset['Cleaned_Ingredients'][index], "--", result[index])
+        jsonresult.append({'rank': i + 1, 'menu': dataset['Title'][index], 'ingredients': dataset['Cleaned_Ingredients'][index]})
+        print(str(i + 1), dataset['Title'][index], "--", result[index])
+    return json.dumps(jsonresult, indent=4)
 
 def query_by_ingredients(input):
+    jsonresult = []
     tfidfvectorizer = TfidfVectorizer(ngram_range=(1,2))
     ingre_vec = tfidfvectorizer.fit_transform(cleaned_ingredients)
     query = tfidfvectorizer.transform([clean(input)])
     result = cosine_similarity(ingre_vec, query).reshape((-1,))
     for i, index in enumerate(result.argsort()[-10:][::-1]):
-        print(str(i + 1), dataset['Title'][index], "--", dataset['Cleaned_Ingredients'][index], "--", result[index])
+        jsonresult.append({'rank': i + 1, 'menu': dataset['Title'][index], 'ingredients': dataset['Cleaned_Ingredients'][index]})
+        print(str(i + 1), dataset['Title'][index], "--", result[index])
+    return json.dumps(jsonresult, indent=4)
