@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 def clean(text):
@@ -21,10 +21,11 @@ def clean(text):
     stemmed_text = ' '.join([ps.stem(w) for w in sw_removed_text])
     return stemmed_text
 dataset = pd.read_csv('ingredient_dataset.csv')
-dataset = dataset.drop(['Unnamed: 0', 'Ingredients'],axis=1)
+# dataset = dataset.drop(['Unnamed: 0', 'Ingredients'],axis=1)
 dataset = dataset.dropna()
 dataset = dataset.reset_index(drop=True)
 cleaned_title = []
+cleaned_ingredients = []
 
 if not Path('cleaned_title.pickle').exists():
     for i in dataset['Title']:
@@ -34,6 +35,15 @@ if not Path('cleaned_title.pickle').exists():
 else:
     with open('cleaned_title.pickle', 'rb') as fin:
         cleaned_title = pickle.load(fin)
+
+if not Path('cleaned_ingredients.pickle').exists():
+    for i in dataset['Cleaned_Ingredients']:
+        cleaned_ingredients.append(i)
+    with open('cleaned_ingredients.pickle', 'wb') as fin:
+        pickle.dump(cleaned_ingredients, fin)
+else:
+    with open('cleaned_ingredients.pickle', 'rb') as fin:
+        cleaned_ingredients = pickle.load(fin)
 
 
 
@@ -47,10 +57,18 @@ else:
 # cleaned_description = cleaned_description.apply(lambda s: [word for word in s if len(word) > 2])
 # cleaned_description = cleaned_description.apply(lambda s: ' '.join([ps.stem(w) for w in s]))
 
-def query(input):
+def query_by_title(input):
     tfidfvectorizer = TfidfVectorizer(ngram_range=(1,2))
     title_vec = tfidfvectorizer.fit_transform(cleaned_title)
     query = tfidfvectorizer.transform([clean(input)])
     result = cosine_similarity(title_vec, query).reshape((-1,))
+    for i, index in enumerate(result.argsort()[-10:][::-1]):
+        print(str(i + 1), dataset['Title'][index], "--", dataset['Cleaned_Ingredients'][index], "--", result[index])
+
+def query_by_ingredients(input):
+    tfidfvectorizer = TfidfVectorizer(ngram_range=(1,2))
+    ingre_vec = tfidfvectorizer.fit_transform(cleaned_ingredients)
+    query = tfidfvectorizer.transform([clean(input)])
+    result = cosine_similarity(ingre_vec, query).reshape((-1,))
     for i, index in enumerate(result.argsort()[-10:][::-1]):
         print(str(i + 1), dataset['Title'][index], "--", dataset['Cleaned_Ingredients'][index], "--", result[index])
