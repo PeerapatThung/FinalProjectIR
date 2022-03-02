@@ -1,9 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import cross_origin
 import main as module
 
 app = Flask(__name__)
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/database.db'
 db = SQLAlchemy(app)
 # cors = CORS(app, resources={r'/api/*', {'origins': "http://localhost:3000"}})
 
@@ -12,6 +13,15 @@ class Recipe(db.Model):
     title = db.Column(db.String(250), nullable=False)
     instruction = db.Column(db.String(), nullable=False)
     ingredient = db.Column(db.String(), nullable=False)
+    image = db.Column(db.String(), nullable=False)
+
+    def get_recipe(self):
+        return {
+            'title': self.title,
+            'instruction': self.instruction,
+            'ingredient': self.ingredient,
+            'image': self.image
+        }
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -31,7 +41,8 @@ db.create_all()
 for index in range(len(module.dataset)):
     toAdd = Recipe(title=module.dataset['Title'][index],
                    ingredient=module.dataset['Cleaned_Ingredients'][index],
-                   instruction=module.dataset['Instructions'][index])
+                   instruction=module.dataset['Instructions'][index],
+                   image=module.dataset['Image_Name'][index]+".jpg")
     db.session.add(toAdd)
     db.session.commit()
 
@@ -50,6 +61,13 @@ def search_ingredient():
     if request.method == 'POST':
         body = request.get_json()
         return module.query_by_ingredients(body['query'])
+
+@app.route('/recipes/<int:page>', methods=['GET'])
+@cross_origin(origins=['http://localhost:3000'])
+def show_all(page):
+    if request.method == 'GET':
+        result = Recipe.query.paginate(per_page=10, page=page)
+        return jsonify({'result': [a.get_recipe() for a in result.items]})
 
 @app.route('/hello')
 def hello():
