@@ -48,12 +48,22 @@ for index in range(len(module.dataset)):
     db.session.add(toAdd)
     db.session.commit()
 
-@app.route('/title', methods=['POST','GET'])
+@app.route('/title/<int:page>', methods=['POST','GET'])
 @cross_origin(origins=['http://localhost:3000'])
-def search_title():
+def search_title(page):
     if request.method == 'POST':
         body = request.get_json()
-        return module.query_by_title(body['query'])
+        ranking = module.query_by_title(body['query'])
+        paginator = Paginator(ranking, 10)
+        a = list(paginator.page(page))
+        for i in range(len(a)):
+            print(type(a[i]))
+            a[i] = int(a[i])
+        print(a)
+        a = map(lambda x: x + 1, a)
+        result = Recipe.query.filter(Recipe.id.in_(a))
+        print(result.all())
+        return jsonify({'result': [a.get_recipe() for a in result]})
 
 @app.route('/ingre/<int:page>', methods=['POST','GET'])
 @cross_origin(origins=['http://localhost:3000'])
@@ -68,7 +78,6 @@ def search_ingredient(page):
             a[i] = int(a[i])
         print(a)
         a = map(lambda x:x+1, a)
-        # a = map(int, a)
         result = Recipe.query.filter(Recipe.id.in_(a))
         print(result.all())
         return jsonify({'result': [a.get_recipe() for a in result]})
