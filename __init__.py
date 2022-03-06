@@ -1,8 +1,13 @@
+from pathlib import Path
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 
 db = SQLAlchemy()
+from . import functions
+
+dataset = functions.dataset
 
 def create_app():
     app = Flask(__name__)
@@ -27,5 +32,18 @@ def create_app():
 
     from .main1 import main as main_blueprint
     app.register_blueprint(main_blueprint)
+
+    from .models import Recipe
+
+    if not Path('db.sqlite3').exists():
+        with app.app_context():
+            db.create_all()
+            for index in range(len(dataset)):
+                toAdd = Recipe(title=dataset['Title'][index],
+                               ingredient=dataset['Cleaned_Ingredients'][index],
+                               instruction=dataset['Instructions'][index],
+                               image=dataset['Image_Name'][index] + ".jpg")
+                db.session.add(toAdd)
+                db.session.commit()
 
     return app

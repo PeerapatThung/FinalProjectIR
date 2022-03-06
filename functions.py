@@ -4,10 +4,13 @@ import re
 import string
 from pathlib import Path
 import pandas as pd
+from flask import Blueprint
 from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+functions = Blueprint('functions', __name__)
 
 def clean(text):
     cleaned_text = text.translate(str.maketrans('', '', '!"#$%&\'()*+,.<=>?@[]^`{|}~' + u'\xa0'))
