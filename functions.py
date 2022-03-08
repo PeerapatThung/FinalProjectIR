@@ -9,8 +9,11 @@ from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from spellchecker import SpellChecker
+from textblob import Word, TextBlob
 
 functions = Blueprint('functions', __name__)
+spell = SpellChecker()
 
 def clean(text):
     cleaned_text = text.translate(str.maketrans('', '', '!"#$%&\'()*+,.<=>?@[]^`{|}~' + u'\xa0'))
@@ -61,6 +64,7 @@ else:
 # cleaned_description = cleaned_description.apply(lambda s: ' '.join([ps.stem(w) for w in s]))
 
 def query_by_title(input):
+    correction = spell.candidates(input)
     results = []
     tfidfvectorizer = TfidfVectorizer(ngram_range=(1,2))
     title_vec = tfidfvectorizer.fit_transform(cleaned_title)
@@ -70,9 +74,10 @@ def query_by_title(input):
         if result[index] > 0.0:
             results.append(index)
         # print(str(i + 1), dataset['Title'][index], "--", result[index])
-    return results
+    return results, correction
 
 def query_by_ingredients(input):
+    correction = spell.candidates(input)
     results = []
     tfidfvectorizer = TfidfVectorizer(ngram_range=(1,2))
     ingre_vec = tfidfvectorizer.fit_transform(cleaned_ingredients)
@@ -82,4 +87,4 @@ def query_by_ingredients(input):
         if result[index] > 0.0:
             results.append(index)
         # print(str(i + 1), dataset['Title'][index], "--", result[index])
-    return results
+    return results, correction

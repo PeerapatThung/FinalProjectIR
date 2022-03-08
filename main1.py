@@ -20,35 +20,43 @@ def profile():
 @cross_origin(origins=['http://localhost:3000'])
 def search_title(page):
     if request.method == 'POST':
+        corrections = []
         body = request.get_json()
-        ranking = functions.query_by_title(body['query'])
+        ranking, correction = functions.query_by_title(body['query'])
         paginator = Paginator(ranking, 10)
         a = list(paginator.page(page))
         for i in range(len(a)):
-            print(type(a[i]))
             a[i] = int(a[i])
-        print(a)
         a = map(lambda x: x + 1, a)
         result = Recipe.query.filter(Recipe.id.in_(a))
-        print(result.all())
-        return jsonify({'result': [a.get_recipe() for a in result]})
+        for x in correction:
+            if x != body['query']:
+                corrections.append(x)
+        if corrections:
+            return jsonify({'result': [a.get_recipe() for a in result], 'correction': corrections})
+        else:
+            return jsonify({'result': [a.get_recipe() for a in result]})
 
 @main.route('/ingre/<int:page>', methods=['POST','GET'])
 @cross_origin(origins=['http://localhost:3000'])
 def search_ingredient(page):
     if request.method == 'POST':
+        corrections = []
         body = request.get_json()
-        ranking = functions.query_by_ingredients(body['query'])
+        ranking, correction = functions.query_by_ingredients(body['query'])
         paginator = Paginator(ranking, 10)
         a = list(paginator.page(page))
         for i in range(len(a)):
-            print(type(a[i]))
             a[i] = int(a[i])
-        print(a)
         a = map(lambda x:x+1, a)
         result = Recipe.query.filter(Recipe.id.in_(a))
-        print(result.all())
-        return jsonify({'result': [a.get_recipe() for a in result]})
+        for x in correction:
+            if x != body['query']:
+                corrections.append(x)
+        if corrections:
+            return jsonify({'result': [a.get_recipe() for a in result], 'correction': corrections})
+        else:
+            return jsonify({'result': [a.get_recipe() for a in result]})
 
 @main.route('/recipes/<int:page>', methods=['GET'])
 @cross_origin(origins=['http://localhost:3000'])
