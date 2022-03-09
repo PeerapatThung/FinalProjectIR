@@ -64,3 +64,10 @@ def show_all(page):
     if request.method == 'GET':
         result = Recipe.query.paginate(per_page=10, page=page)
         return jsonify({'result': [a.get_recipe() for a in result.items]})
+
+@main.route('/recipe/<int:id>', methods=['GET'])
+@cross_origin(origins=['http://localhost:3000'])
+def show(id):
+    if request.method == 'GET':
+        result = Recipe.query.get(id)
+        return jsonify({'result': result.get_recipe()})
