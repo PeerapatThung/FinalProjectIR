@@ -10,6 +10,7 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from spellchecker import SpellChecker
+import math
 from textblob import Word, TextBlob
 
 functions = Blueprint('functions', __name__)
@@ -128,3 +129,17 @@ def query_in_favourite(input, userid):
             results.append(id[index])
         # print(str(i + 1), favourite[index], "--", result[index])
     return results, correction
+
+def recommendation(ingredients):
+    results = []
+    tfidfvectorizer = TfidfVectorizer(ngram_range=(1,2))
+    ingre_vec = tfidfvectorizer.fit_transform(cleaned_ingredients)
+    query = tfidfvectorizer.transform([ingredients])
+    result = cosine_similarity(ingre_vec, query).reshape((-1,))
+    for i, index in enumerate(result.argsort()[-6:][::-1]):
+        if result[index] > 0.0 and result[index] < 0.9:
+            results.append(index)
+        # print(str(i + 1), dataset['Title'][index], "--", result[index])
+    return results
+
+
