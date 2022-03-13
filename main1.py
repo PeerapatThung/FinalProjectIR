@@ -123,3 +123,14 @@ def searchFav(userid):
             return jsonify({'result': [Recipe.query.get(int(a)).get_recipe() for a in ranking], 'correction': corrections})
         else:
             return jsonify({'result': [Recipe.query.get(int(a)).get_recipe() for a in ranking]})
+
+@main.route('/recommend', methods=['POST','GET'])
+@cross_origin(origins=['http://localhost:3000'])
+def recommend():
+    if request.method == 'POST':
+        body = request.get_json()
+        ranking = functions.recommendation(body['query'])
+        a = map(lambda x:x+1, ranking)
+        return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a]})
+
+
