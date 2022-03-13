@@ -28,8 +28,13 @@ class Recipe(db.Model):
             'ingredient': self.ingredient,
             'image': self.image
         }
+    def get_id(self):
+        return self.id
 
 class Favourite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     recipe_id = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, nullable=False)
+
+    def get_favourite(self):
+        return self.recipe_id
