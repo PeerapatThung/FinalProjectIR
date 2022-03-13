@@ -2,8 +2,8 @@ from django.core.paginator import Paginator
 from flask import Blueprint, render_template, request, jsonify
 from flask_cors import cross_origin
 from flask_login import login_required, current_user
-from .models import Recipe
-from . import functions
+from .models import Recipe, User, Favourite
+from . import functions, db
 
 main = Blueprint('main', __name__)
 
@@ -25,17 +25,14 @@ def search_title(page):
         ranking, correction = functions.query_by_title(body['query'])
         paginator = Paginator(ranking, 10)
         a = list(paginator.page(page))
-        for i in range(len(a)):
-            a[i] = int(a[i])
         a = map(lambda x: x + 1, a)
-        result = Recipe.query.filter(Recipe.id.in_(a))
         for x in correction:
             if x != body['query']:
                 corrections.append(x)
         if corrections:
-            return jsonify({'result': [a.get_recipe() for a in result], 'correction': corrections})
+            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a], 'correction': corrections})
         else:
-            return jsonify({'result': [a.get_recipe() for a in result]})
+            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a]})
 
 @main.route('/ingre/<int:page>', methods=['POST','GET'])
 @cross_origin(origins=['http://localhost:3000'])
@@ -46,17 +43,14 @@ def search_ingredient(page):
         ranking, correction = functions.query_by_ingredients(body['query'])
         paginator = Paginator(ranking, 10)
         a = list(paginator.page(page))
-        for i in range(len(a)):
-            a[i] = int(a[i])
         a = map(lambda x:x+1, a)
-        result = Recipe.query.filter(Recipe.id.in_(a))
         for x in correction:
             if x != body['query']:
                 corrections.append(x)
         if corrections:
-            return jsonify({'result': [a.get_recipe() for a in result], 'correction': corrections})
+            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a], 'correction': corrections})
         else:
-            return jsonify({'result': [a.get_recipe() for a in result]})
+            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a]})
 
 @main.route('/recipes/<int:page>', methods=['GET'])
 @cross_origin(origins=['http://localhost:3000'])
@@ -71,3 +65,61 @@ def show(id):
     if request.method == 'GET':
         result = Recipe.query.get(id)
         return jsonify({'result': result.get_recipe()})
+
+@main.route('/setFav', methods=['POST'])
+@cross_origin(origins=['http://localhost:3000'])
+def setFav():
+    if request.method == 'POST':
+        body = request.get_json()
+        user = User.query.filter_by(id=body['userid']).first()
+        recipe = Recipe.query.filter_by(id=body['recipeid']).first()
+
+        new_fav = Favourite(user_id=user.get_id(), recipe_id=recipe.get_id())
+
+        db.session.add(new_fav)
+        db.session.commit()
+    return jsonify({'success': 'Marked Successful'})
+
+@main.route('/fav/<int:userid>', methods=['POST','GET'])
+@cross_origin(origins=['http://localhost:3000'])
+def seeFav(userid):
+    if request.method == 'GET':
+        fav_list = Favourite.query.filter_by(user_id=userid)
+        return jsonify({'result': [a.get_favourite() for a in fav_list]})
+
+@main.route('/showfav/<int:page>', methods=['POST','GET'])
+@cross_origin(origins=['http://localhost:3000'])
+def showFav(page):
+    if request.method == 'POST':
+        body = request.get_json()
+        fav_list = Favourite.query.filter_by(user_id=body['userid']).paginate(per_page=10, page=page)
+        itemid = [a.get_favourite() for a in fav_list.items]
+
+        return jsonify({'result': [Recipe.query.get(int(a)).get_recipe() for a in itemid]})
+
+@main.route('/removeFav', methods=['POST'])
+@cross_origin(origins=['http://localhost:3000'])
+def removeFav():
+    if request.method == 'POST':
+        body = request.get_json()
+        user = User.query.filter_by(id=body['userid']).first()
+        recipe = Recipe.query.filter_by(id=body['recipeid']).first()
+
+        Favourite.query.filter_by(user_id=user.get_id(), recipe_id=recipe.get_id()).delete()
+        db.session.commit()
+    return jsonify({'success': 'Removed Successful'})
+
+@main.route('/searchfav/<int:userid>', methods=['POST','GET'])
+@cross_origin(origins=['http://localhost:3000'])
+def searchFav(userid):
+    if request.method == 'POST':
+        corrections = []
+        body = request.get_json()
+        ranking, correction = functions.query_in_favourite(body['query'], userid)
+        for x in correction:
+            if x != body['query']:
+                corrections.append(x)
+        if corrections:
+            return jsonify({'result': [Recipe.query.get(int(a)).get_recipe() for a in ranking], 'correction': corrections})
+        else:
+            return jsonify({'result': [Recipe.query.get(int(a)).get_recipe() for a in ranking]})
