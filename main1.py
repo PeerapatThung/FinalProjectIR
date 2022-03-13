@@ -30,9 +30,9 @@ def search_title(page):
             if x != body['query']:
                 corrections.append(x)
         if corrections:
-            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a], 'correction': corrections})
+            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a],'total': len(ranking), 'correction': corrections})
         else:
-            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a]})
+            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a],'total': len(ranking)})
 
 @main.route('/ingre/<int:page>', methods=['POST','GET'])
 @cross_origin(origins=['http://localhost:3000'])
@@ -48,16 +48,16 @@ def search_ingredient(page):
             if x != body['query']:
                 corrections.append(x)
         if corrections:
-            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a], 'correction': corrections})
+            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a], 'total': len(ranking), 'correction': corrections})
         else:
-            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a]})
+            return jsonify({'result': [Recipe.query.get(int(x)).get_recipe() for x in a], 'total': len(ranking)})
 
 @main.route('/recipes/<int:page>', methods=['GET'])
 @cross_origin(origins=['http://localhost:3000'])
 def show_all(page):
     if request.method == 'GET':
         result = Recipe.query.paginate(per_page=10, page=page)
-        return jsonify({'result': [a.get_recipe() for a in result.items]})
+        return jsonify({'result': [a.get_recipe() for a in result.items], 'total': 13493})
 
 @main.route('/recipe/<int:id>', methods=['GET'])
 @cross_origin(origins=['http://localhost:3000'])
@@ -92,10 +92,12 @@ def seeFav(userid):
 def showFav(page):
     if request.method == 'POST':
         body = request.get_json()
-        fav_list = Favourite.query.filter_by(user_id=body['userid']).paginate(per_page=10, page=page)
-        itemid = [a.get_favourite() for a in fav_list.items]
+        total = Favourite.query.filter_by(user_id=body['userid']).all()
+        fav_list = Favourite.query.filter_by(user_id=body['userid'])
+        fav_list_paginated = fav_list.paginate(per_page=10, page=page)
+        itemid = [a.get_favourite() for a in fav_list_paginated.items]
 
-        return jsonify({'result': [Recipe.query.get(int(a)).get_recipe() for a in itemid]})
+        return jsonify({'result': [Recipe.query.get(int(a)).get_recipe() for a in itemid], 'total': len(total)})
 
 @main.route('/removeFav', methods=['POST'])
 @cross_origin(origins=['http://localhost:3000'])
